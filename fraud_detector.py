@@ -210,7 +210,7 @@ def main():
                 st.sidebar.success(f"Prediction: NOT FRAUD (Class {class_0}) (Confidence: {prob:.2f}% intermediary)")
 
 if __name__ == "__main__":
-    if 'model_trained' not not in st.session_state:
+    if 'model_trained' not in st.session_state:
         st.session_state['model_trained'] = False
         
     main()
