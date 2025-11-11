@@ -126,6 +126,17 @@ def main():
         # 5 & 6. TRAIN MODEL AND GET REPORT
         if st.button("Train Logistic Regression Model", type="primary"):
             st.subheader("4. Model Training & Evaluation")
+
+            # --- NEW VALIDATION BLOCK ---
+            # Check if the target column has at least 2 classes
+            target_unique_values = data_cleaned[target_col].nunique()
+            if target_unique_values < 2:
+                st.error(f"**Training Error:** The selected target column ('{target_col}') only has {target_unique_values} unique value.")
+                st.warning("A logistic regression model needs at least two different classes in the target column (e.g., 0 and 1) to learn from. This often happens if the data is a summary report.")
+                st.info("Please upload a transaction-level dataset or select a different target column that contains both 0s and 1s.")
+                return  # Stop execution here
+            # --- END OF NEW BLOCK ---
+
             with st.spinner('Training model... This may take a moment.'):
                 try:
                     model, scaler, accuracy, report, cm, trained_features = train_model(data_cleaned, feature_cols, target_col)
