@@ -175,19 +175,27 @@ def main():
                 except Exception as e:
                     st.error(f"An unexpected error occurred: {e}")
 
-    # --- INTERACTIVE PREDICTION SIDEBAR ---
+    # --- 4. INTERACTIVE PREDICTION (MOVED FROM SIDEBAR) ---
     # Only show if the model has been trained successfully
     if st.session_state.get('model_trained', False):
-        st.sidebar.header("🔬 Real-Time Fraud Check")
-        st.sidebar.markdown("Enter transaction details to get a prediction.")
+        st.subheader("5. Real-Time Fraud Check")
+        st.markdown("Enter transaction details to test the trained model.")
         
         model, scaler, trained_features = st.session_state['model_assets']
         
+        # Use columns for a cleaner layout
+        st.info("Enter the values for the features used in training:")
         input_data = {}
-        for feature in trained_features:
-            input_data[feature] = st.sidebar.number_input(f"{feature}", value=0.0, format="%.2f")
+        
+        # Create a 2-column layout for inputs
+        col_count = 2
+        cols = st.columns(col_count)
+        
+        for i, feature in enumerate(trained_features):
+            with cols[i % col_count]:
+                input_data[feature] = st.number_input(f"{feature}", value=0.0, format="%.2f", key=f"input_{feature}")
             
-        if st.sidebar.button("Check Transaction", type="primary"):
+        if st.button("Check Transaction", type="primary"):
             # Create a DataFrame for the input
             input_df = pd.DataFrame([input_data])
             
@@ -199,15 +207,23 @@ def main():
             prediction_proba = model.predict_proba(input_scaled)
             
             # Display the result
-            st.sidebar.subheader("Prediction Result")
+            st.subheader("Prediction Result")
             class_0, class_1 = model.classes_
-            
+            prob_0 = prediction_proba[0][0] * 100
+            prob_1 = prediction_proba[0][1] * 100
+
             if prediction[0] == class_1: # Assuming class 1 is "Fraud"
-                prob = prediction_proba[0][1] * 100
-                st.sidebar.error(f"Prediction: FRAUD (Class {class_1}) (Confidence: {prob:.2f}%)")
+                st.error(f"**Prediction: FRAUD (Class {class_1})**")
+                col1, col2 = st.columns(2)
+                col1.metric(f"Confidence (Likelihood of Fraud)", f"{prob_1:.2f}%")
+                col2.metric(f"Likelihood of Not Fraud (Class {class_0})", f"{prob_0:.2f}%")
+                st.warning("This transaction is flagged as high-risk. The model is highly confident that this is fraudulent.")
             else:
-                prob = prediction_proba[0][0] * 100
-                st.sidebar.success(f"Prediction: NOT FRAUD (Class {class_0}) (Confidence: {prob:.2f}%)")
+                st.success(f"**Prediction: NOT FRAUD (Class {class_0})**")
+                col1, col2 = st.columns(2)
+                col1.metric(f"Confidence (Likelihood of Not Fraud)", f"{prob_0:.2f}%")
+                col2.metric(f"Likelihood of Fraud (Class {class_1})", f"{prob_1:.2f}%")
+                st.info("This transaction appears to be legitimate. The model is highly confident this is not fraudulent.")
 
 if __name__ == "__main__":
     if 'model_trained' not in st.session_state:
